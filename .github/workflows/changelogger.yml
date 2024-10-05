@@ -10,25 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.8'
 
-      - name: Install Python dependencies
-        run: |
+      - run: |
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Gather commit data and generate changelog
-        run: |
-          python -c "
-          import json
+      - run: |
+          python - <<EOF
           import subprocess
           import requests
 
@@ -37,18 +32,17 @@ jobs:
 
           prompt = 'Generate a changelog based on the following commits:\n\n'
           for commit in commits:
-              prompt += f'- {commit['subject']} (by {commit['author']})\n'
+              prompt += f"- {commit['subject']} (by {commit['author']})\n"
 
           response = requests.post('https://log-tab7.onrender.com/generate', json={'prompt': prompt})
           generated_changelog = response.json()['generated_text']
 
           with open('CHANGELOG.md', 'w') as f:
               f.write(generated_changelog)
-          "
+          EOF
 
-      - name: Create Pull Request
-        env:
-          REPO_TOKEN: ${{secrets.REPO_TOKEN}}
+      - env:
+          REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
