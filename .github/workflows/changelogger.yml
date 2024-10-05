@@ -11,40 +11,49 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.8'
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flask flask-cors transformers torch
+          pip install requests
 
-      - name: Start Flask API
-        run: python model/app.py &
+      - name: Gather commit data and generate changelog
+        run: |
+          python -c "
+          import json
+          import subprocess
+          import requests
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '16'
+          commit_data = subprocess.check_output(['git', 'log', '--pretty=format:%H%n%an%n%at%n%s%n%b%n==END==', '--reverse']).decode('utf-8')
+          commits = [dict(zip(['hash', 'author', 'timestamp', 'subject', 'body'], c.split('\n'))) for c in commit_data.split('==END==\n') if c.strip()]
 
-      - name: Install Node.js dependencies
-        run: npm install
+          prompt = 'Generate a changelog based on the following commits:\n\n'
+          for commit in commits:
+              prompt += f'- {commit['subject']} (by {commit['author']})\n'
 
-      - name: Run Changelogger
-        run: node action/changelogger.js
+          response = requests.post('https://log-tab7.onrender.com/generate', json={'prompt': prompt})
+          generated_changelog = response.json()['generated_text']
+
+          with open('CHANGELOG.md', 'w') as f:
+              f.write(generated_changelog)
+          "
+
+      - name: Create Pull Request
         env:
-          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FLASK_API_URL: "https://log-tab7.onrender.com/generate"
-
-      - name: Update Changelog
-        uses: peter-evans/create-pull-request@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: Update changelog
-          title: Update Changelog
-          body: Automatically generated changelog update
-          branch: update-changelog
+          REPO_TOKEN: ${{secrets.REPO_TOKEN}}
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git checkout -b update-changelog
+          git add CHANGELOG.md
+          git commit -m "Update changelog"
+          git push origin update-changelog
+          gh pr create --title "Update Changelog" --body "Automatically generated changelog update" --base main --head update-changelog
