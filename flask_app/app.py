@@ -13,15 +13,20 @@ def generate_text():
     input_data = request.json
     prompt = input_data.get('prompt', '')
 
+    print("Promptt:")
+    print(prompt)
+
     try:
         result = generator(
             prompt,
-            max_new_tokens=50, 
+            max_new_tokens=50,
             num_return_sequences=1,
             truncation=True
         )
         return jsonify({"generated_text": result[0]['generated_text']})
     except Exception as e:
+        print("Errorrr :")
+        print(str(e)) 
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':

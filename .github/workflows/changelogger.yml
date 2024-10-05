@@ -41,6 +41,11 @@ jobs:
               f.write(generated_changelog)
           EOF
 
+      - name: List generated files
+        run: |
+          echo "Generated files:"
+          ls -1  # List all files in the current directory
+          
       - env:
           REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
         run: |
