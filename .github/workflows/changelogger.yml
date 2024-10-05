@@ -38,7 +38,7 @@ jobs:
         run: node action/changelogger.js
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FLASK_API_URL: "https://flaskchangelogapi.onrender.com/generate"
+          FLASK_API_URL: "https://log-tab7.onrender.com/generate"
 
       - name: Update Changelog
         uses: peter-evans/create-pull-request@v3

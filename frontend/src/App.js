@@ -5,7 +5,7 @@ function App() {
   const [generatedText, setGeneratedText] = useState("");
 
   const handleGenerate = async () => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/generate';
+    const apiUrl = process.env.REACT_APP_API_URL || 'https://log-tab7.onrender.com/generate';
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
