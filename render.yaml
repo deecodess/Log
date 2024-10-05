@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: flask-gpt-neo
+    env: python
+    buildCommand: pip install -r flask_app/requirements.txt
+    startCommand: gunicorn flask_app.app:app
+    repo: https://github.com/deecodess/Log.git
+    branch: main
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.8.12
