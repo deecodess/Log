@@ -46,8 +46,6 @@ jobs:
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git checkout -b update-changelog
           git add CHANGELOG.md
           git commit -m "Update changelog"
-          git push origin update-changelog
-          gh pr create --title "Update Changelog" --body "Automatically generated changelog update" --base main --head update-changelog
+          git push origin main
