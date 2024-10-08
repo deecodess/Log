@@ -10,7 +10,7 @@ function App() {
 
   const fetchChangelogs = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/changelogs')
+      const response = await axios.get(process.env.REACT_BACKEND_URL)
       setChangelogs(response.data)
     } catch (error) {
       console.error('Error fetching changelogs:', error)

@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build:
+  changelogger:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,9 +23,15 @@ jobs:
           cd backend
           npm install
 
+      - name: Extract commit messages
+        id: commits
+        run: |
+          COMMITS=$(git log -1 --pretty=format:"%s%n%b")
+          echo "::set-output name=commits::$COMMITS"
+
       - name: Send commits to backend
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
         run: |
-          COMMITS=$(git log -1 --pretty=format:'%H%n%s%n%b')
+          COMMITS="${{ steps.commits.outputs.commits }}"
           curl -X POST $BACKEND_URL -H "Content-Type: application/json" -d "{\"commits\":[{\"message\":\"$COMMITS\"}]}"
