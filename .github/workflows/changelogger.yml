@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '14'
 
@@ -27,11 +27,15 @@ jobs:
         id: commits
         run: |
           COMMITS=$(git log -1 --pretty=format:"%s%n%b")
-          echo "::set-output name=commits::$COMMITS"
+          echo "commits<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Send commits to backend
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
         run: |
           COMMITS="${{ steps.commits.outputs.commits }}"
-          curl -X POST $BACKEND_URL -H "Content-Type: application/json" -d "{\"commits\":[{\"message\":\"$COMMITS\"}]}"
+          # Use jq to safely construct JSON payload
+          jq -n --arg msg "$COMMITS" '{commits: [{ message: $msg }]}' | \
+          curl -X POST $BACKEND_URL -H "Content-Type: application/json" -d @-
