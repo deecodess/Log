@@ -34,8 +34,9 @@ jobs:
       - name: Send commits to backend
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} 
         run: |
           COMMITS="${{ steps.commits.outputs.commits }}"
-          # Use jq to safely construct JSON payload
           jq -n --arg msg "$COMMITS" '{commits: [{ message: $msg }]}' | \
-          curl -X POST $BACKEND_URL -H "Content-Type: application/json" -d @-
+          curl -X POST $BACKEND_URL -H "Content-Type: application/json" \
+               -H "Authorization: Bearer $GEMINI_API_KEY" -d @-

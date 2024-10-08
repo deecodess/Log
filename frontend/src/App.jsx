@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown'; 
+import './App.css';
 
 function App() {
   const [changelogs, setChangelogs] = useState([]);
-  const [error, setError] = useState(null);  
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchChangelogs();
@@ -12,32 +14,40 @@ function App() {
   const fetchChangelogs = async () => {
     try {
       const backendUrl = import.meta.env.VITE_REACT_BACKEND_URL || 'http://localhost:5000/api/changelogs';
-
       console.log('Fetching from:', backendUrl);
       const response = await axios.get(backendUrl);
       console.log('Changelogs response:', response.data);
 
       setChangelogs(response.data);
     } catch (error) {
-      console.error('Error1: ', error);
-      setError('Error2');
+      console.error('Error fetching changelogs:', error);
+      setError('Failed to load changelogs. Please check the console for more information.');
     }
   };
 
   return (
-    <div>
+    <div className="changelog-container">
       <h1>Changelog</h1>
-      {error && <p>{error}</p>}  
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <ul>
         {changelogs.length > 0 ? (
           changelogs.map((log, index) => (
-            <li key={index}>
-              <strong>{new Date(log.date).toLocaleString()}:</strong> <br />
-              <div dangerouslySetInnerHTML={{ __html: log.summary }} />
+            <li key={index} className="changelog-item">
+              <div className="changelog-item-date">
+                {new Date(log.date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </div>
+              <div className="changelog-item-heading">Changelog {index + 1}</div>
+              <ReactMarkdown className="changelog-item-summary">
+                {log.summary}
+              </ReactMarkdown>
             </li>
           ))
         ) : (
-          <p>No changelogs available.</p> 
+          <p>No changelogs available.</p>
         )}
       </ul>
     </div>
