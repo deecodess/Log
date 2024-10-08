@@ -6,51 +6,22 @@ on:
       - main
 
 jobs:
-  changelog:
+  changelogger:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v2
         with:
-          fetch-depth: 0
+          token: ${{ secrets.REPO_TOKEN }}
 
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
-
-      - run: |
-          python -m pip install --upgrade pip
-          pip install requests
-
-      - run: |
-          python - <<EOF
-          import subprocess
-          import requests
-
-          commit_data = subprocess.check_output(['git', 'log', '--pretty=format:%H%n%an%n%at%n%s%n%b%n==END==', '--reverse']).decode('utf-8')
-          commits = [dict(zip(['hash', 'author', 'timestamp', 'subject', 'body'], c.split('\n'))) for c in commit_data.split('==END==\n') if c.strip()]
-
-          prompt = 'Generate a changelog based on the following commits:\n\n'
-          for commit in commits:
-              prompt += f"- {commit['subject']} (by {commit['author']})\n"
-
-          response = requests.post('https://log-tab7.onrender.com/generate', json={'prompt': prompt})
-          generated_changelog = response.json()['generated_text']
-
-          with open('CHANGELOG.md', 'w') as f:
-              f.write(generated_changelog)
-          EOF
-
-      - name: List generated files
+      - name: Install dependencies
         run: |
-          echo "Generated files:"
-          ls -1  # List all files in the current directory
-          
-      - env:
-          REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          npm install axios dotenv
+
+      - name: Create changelog
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add CHANGELOG.md
-          git commit -m "Update changelog"
-          git push origin main
+          git log -1 --pretty=format:"%h - %s (%an, %ar)" > changelog.txt
+          node ./server.js

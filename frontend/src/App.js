@@ -1,33 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 function App() {
-  const [inputText, setInputText] = useState("");
-  const [generatedText, setGeneratedText] = useState("");
+  const [changelogSummary, setChangelogSummary] = useState('');
 
-  const handleGenerate = async () => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'https://log-tab7.onrender.com/generate';
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: inputText }),
-    });
-    const data = await response.json();
-    setGeneratedText(data.generated_text || data.text); 
-  };
+  useEffect(() => {
+    axios.get('http://localhost:5000/changelog-summary')
+      .then(response => {
+        setChangelogSummary(response.data.summary);
+      })
+      .catch(error => {
+        console.error('Error fetching changelog summary:', error);
+      });
+  }, []);
 
   return (
     <div>
-      <h1>Text Generation with GPT-Neo</h1>
-      <input
-        type="text"
-        value={inputText}
-        onChange={(e) => setInputText(e.target.value)}
-      />
-      <button onClick={handleGenerate}>Generate Text</button>
-      <div>
-        <h2>Generated Text:</h2>
-        <p>{generatedText}</p>
-      </div>
+      <h1>Changelog Summary</h1>
+      <p>{changelogSummary}</p>
     </div>
   );
 }
