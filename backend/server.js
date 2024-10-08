@@ -1,44 +1,41 @@
-require('dotenv').config();
-const axios = require('axios');
-const fs = require('fs');
-const cors = require('cors');
-const express = require('express');
+const express = require('express')
+const axios = require('axios')
+const bodyParser = require('body-parser')
+const cors = require('cors')
 
-const app = express();
-app.use(cors());
+const app = express()
+const PORT = process.env.PORT || 5000
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 
-let changelogSummary = '';
+app.use(bodyParser.json())
+app.use(cors())
 
-const path = require('path');
-const changelogPath = path.resolve(__dirname, 'changelog.txt');
+let changelogs = []
 
-fs.readFile(changelogPath, 'utf8', (err, data) => {
-  if (err) throw err;
-  axios.post('https://api.openai.com/v1/engines/gemini/completions', {
-    prompt: `Summarize the following changelog in a few lines:\n\n${data}`,
-    max_tokens: 100
-  }, {
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.GEMINI_TOKEN}`,
-    }
-  }).then(response => {
-    changelogSummary = response.data.choices[0].text.trim();
-    console.log('Changelog Summary:', changelogSummary);
-    fs.writeFile('changelog_summary.txt', changelogSummary, (err) => {
-      if (err) throw err;
-      console.log('Changelog summary saved to changelog_summary.txt');
-    });
-  }).catch(error => {
-    console.error('Error:', error);
-  });
-});
+app.post('/api/commits', async (req, res) => {
+  const commits = req.body.commits
+  const commitMessages = commits.map(commit => commit.message).join('\n')
+  try {
+    const response = await axios.post('https://api.gemini.com/summarize', {
+      prompt: `Summarize the following commit messages:\n${commitMessages}`
+    }, {
+      headers: {
+        'Authorization': `Bearer ${GEMINI_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    const summary = response.data.summary
+    changelogs.push({ summary, date: new Date() })
+    res.status(200).send({ summary })
+  } catch (error) {
+    res.status(500).send({ error: 'Failed to get summary from Gemini API' })
+  }
+})
 
-app.get('/changelog-summary', (req, res) => {
-  res.json({ summary: changelogSummary });
-});
+app.get('/api/changelogs', (req, res) => {
+  res.send(changelogs)
+})
 
-const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+  console.log(`Server is running on port ${PORT}`)
+})
