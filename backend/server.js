@@ -1,5 +1,5 @@
 const express = require('express');
-const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { MongoClient } = require('mongodb');
@@ -30,24 +30,10 @@ async function connectDB() {
 connectDB();
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const schema = {
-  description: "Summary of commit messages",
-  type: SchemaType.OBJECT,
-  properties: {
-    summary: {
-      type: SchemaType.STRING,
-      nullable: false
-    }
-  },
-  required: ["summary"]
-};
 
 const model = genAI.getGenerativeModel({
-  model: 'gemini-1.5-pro',
-  generationConfig: {
-    responseMimeType: "application/json",
-    responseSchema: schema
-  }
+  model: 'gemini-1.5-pro-latest',
+  generationConfig: { response_mime_type: "application/json" },
 });
 
 app.post('/api/commits', async (req, res) => {
@@ -57,28 +43,28 @@ app.post('/api/commits', async (req, res) => {
   }
 
   const commitMessages = commits.map(commit => commit.message).join('\n');
-  try {
-    const prompt = `Summarize the following commit messages:\n${commitMessages}`;
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: prompt
-            }
-          ]
-        }
-      ]
-    });
+  const jsonSchema = {
+    title: "Commit Summary",
+    description: "Summarized commit messages from a changelog",
+    type: "object",
+    properties: {
+      summary: { type: "string", description: "Summary of the commits" }
+    },
+    required: ["summary"]
+  };
 
-    const summary = result.response.candidates[0]?.text || "No summary available.";
+  const prompt = `Follow JSON schema.<JSONSchema>${JSON.stringify(jsonSchema)}</JSONSchema>\nSummarize the following commit messages:\n${commitMessages}`;
+  
+  try {
+    const result = await model.generateContent(prompt);
+    const summary = await result.response.text();
+
     const changelog = {
       summary,
       date: new Date()
     };
 
-    const check = await changelogCollection.insertOne(changelog);
+    await changelogCollection.insertOne(changelog);
     res.status(200).send({ summary });
 
   } catch (error) {
