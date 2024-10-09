@@ -65,7 +65,7 @@ app.post('/api/commits', async (req, res) => {
   
     console.log('Gemini API response:', result); 
     
-    const summary = result.response.text(); 
+    const summary = result.response.candidates[0].text;
   
     const changelog = {
       summary,
