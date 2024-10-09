@@ -21,7 +21,7 @@ function App() {
       setChangelogs(response.data);
     } catch (error) {
       console.error('Error fetching changelogs:', error);
-      setError('Failed to load changelogs. Please check the console for more information.');
+      setError('Failed to load changelogs.');
     }
   };
 
