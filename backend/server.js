@@ -49,7 +49,7 @@ app.post('/api/commits', async (req, res) => {
 
   try {
     const prompt = `Summarize the following commit messages:\n${commitMessages}`;
-  
+    console.log('Prompt: ', prompt)
     const result = await model.generateContent({
       contents: [
         {
@@ -63,7 +63,7 @@ app.post('/api/commits', async (req, res) => {
       ]
     });
   
-    console.log('Gemini API response:', result); 
+    console.log('Gemini API raw:', result); 
     
     const summary = result.response.candidates[0].text;
   
@@ -72,7 +72,10 @@ app.post('/api/commits', async (req, res) => {
       date: new Date()
     };
 
-    await changelogCollection.insertOne(changelog);
+    // await changelogCollection.insertOne(changelog);
+    const check = await changelogCollection.insertOne(changelog);
+    console.log('Inserted changelog:', check);
+
   
     console.log('Generated summary:', summary);
     res.status(200).send({ summary });
