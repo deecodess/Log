@@ -14,8 +14,8 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // const uri = process.env.MONGODB_URI;
 
-console.log('MongoDB URI:', uri);
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+// console.log('MongoDB URI:', uri);
+const client = new MongoClient(uri);
 
 let changelogCollection;
 
