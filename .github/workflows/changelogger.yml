@@ -38,7 +38,6 @@ jobs:
       - name: Debug commit messages and changes
         run: |
           echo "Commit messages: ${{ steps.commit_data.outputs.commit_message }}"
-          echo "Commit changes: ${{ steps.commit_data.outputs.commit_changes }}"
 
       - name: Send commit messages and changes to backend
         env:
