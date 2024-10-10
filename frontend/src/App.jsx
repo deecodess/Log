@@ -18,8 +18,9 @@ function App() {
       setChangelogs(response.data);
     } catch {
       setError('Failed to load changelogs.');
-    }
+
   };
+}
 
   const technicalWords = ["refactor", "optimize", "bug", "fix", "performance", "deployment", "security", "patch"];
 
@@ -73,5 +74,6 @@ function App() {
     </div>
   );
 }
+
 
 export default App;
