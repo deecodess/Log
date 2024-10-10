@@ -33,27 +33,34 @@ jobs:
           fi
           echo "previous_sha=$PREV_SHA" >> $GITHUB_ENV
 
-      - name: Get changed files
-        id: changed_files
-        run: |
+          - name: Get changed files and commit messages
+          id: changed_files
+          run: |
             CURRENT_SHA=$(git rev-parse HEAD --)
-  
             if [ -z "${{ env.previous_sha }}" ]; then
-
               CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r $CURRENT_SHA --)
             else
               CHANGED_FILES=$(git diff --name-only ${{ env.previous_sha }} $CURRENT_SHA --)
             fi
-  
-            echo "Changed files: $CHANGED_FILES"
+        
+            COMMIT_MESSAGES=$(git log --format=%B -n 1 $CURRENT_SHA)
             echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
-
-      - name: Send changed files to backend
+            echo "commit_messages=$COMMIT_MESSAGES" >> $GITHUB_OUTPUT
+        
+      - name: Send changed files and commit messages to backend
         env:
-          BACKEND_URL: ${{ secrets.BACKEND_URL }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+            BACKEND_URL: ${{ secrets.BACKEND_URL }}
+            GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          curl -X POST "$BACKEND_URL" \
-               -H "Content-Type: application/json" \
-               -H "Authorization: Bearer $GEMINI_API_KEY" \
-               -d '{"changed_files": "'"${{ steps.changed_files.outputs.changed_files }}"'"}'
+            if [ -z "${{ steps.changed_files.outputs.changed_files }}" ];then
+              curl -X POST "$BACKEND_URL" \
+                   -H "Content-Type: application/json" \
+                   -H "Authorization: Bearer $GEMINI_API_KEY" \
+                   -d '{"commits": [{"message": "'"${{ steps.changed_files.outputs.commit_messages }}"'"}]}'
+            else
+              curl -X POST "$BACKEND_URL" \
+                   -H "Content-Type: application/json" \
+                   -H "Authorization: Bearer $GEMINI_API_KEY" \
+                   -d '{"commits": [{"message": "'"${{ steps.changed_files.outputs.commit_messages }}"'"}], "changed_files": "'"${{ steps.changed_files.outputs.changed_files }}"'"}'
+            fi
+        

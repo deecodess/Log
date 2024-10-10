@@ -38,10 +38,7 @@ const model = genAI.getGenerativeModel({
 
 app.post('/api/commits', async (req, res) => {
   const commits = req.body.commits;
-
-  console.log("Received:", req.body);
-
-  if (!commits || !Array.isArray(commits)) {
+  if (!commits || !Array.isArray(commits) || commits.length === 0) {
     return res.status(400).send({ error: 'Invalid commits format' });
   }
 
@@ -58,7 +55,6 @@ app.post('/api/commits', async (req, res) => {
 
   const prompt = `You are provided with a series of commit messages. Summarize them in a concise and structured manner, focusing on key technical changes, improvements, and bug fixes. Ensure the summary is between 4-5 sentences, using relevant technical terminology when applicable. Format your response according to the following JSON schema:\n\n<JSONSchema>${JSON.stringify(jsonSchema)}</JSONSchema>\n\nCommit messages:\n${commitMessages}`;
 
-
   try {
     const result = await model.generateContent(prompt);
     const summaryResponse = result.response.text();
@@ -72,12 +68,12 @@ app.post('/api/commits', async (req, res) => {
 
     const changelog = {
       summary: parsedSummary,
-      date: new Date()
+      date: new Date(),
+      changed_files: req.body.changed_files || []
     };
 
     await changelogCollection.insertOne(changelog);
     res.status(200).send({ summary: parsedSummary });
-
   } catch (error) {
     if (error.response) {
       res.status(500).send({ error: 'Failed to get summary from Gemini API', details: error.response.data });
@@ -88,6 +84,7 @@ app.post('/api/commits', async (req, res) => {
     }
   }
 });
+
 
 app.get('/api/changelogs', async (req, res) => {
   try {
