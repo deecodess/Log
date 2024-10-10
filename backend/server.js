@@ -53,7 +53,7 @@ app.post('/api/commits', async (req, res) => {
     required: ["summary"]
   };
 
-  const prompt = `You are given the following commit messages. Summarize them in a concise and informative manner. Please adhere to the following JSON schema for your response:\n\n<JSONSchema>${JSON.stringify(jsonSchema)}</JSONSchema>\n\nCommit messages:\n${commitMessages}`;
+  const prompt = `You are given the following commit messages. Summarize them in a concise manner and in a few lines. Please adhere to the following JSON schema for your response:\n\n<JSONSchema>${JSON.stringify(jsonSchema)}</JSONSchema>\n\nCommit messages:\n${commitMessages}`;
 
   try {
     const result = await model.generateContent(prompt);

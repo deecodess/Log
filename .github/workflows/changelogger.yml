@@ -31,6 +31,10 @@ jobs:
           echo "$COMMITS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Debug commit messages
+        run: |
+          echo "Commit messages: ${{ steps.commits.outputs.commits }}"
+
       - name: Send commits to backend
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
