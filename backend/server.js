@@ -53,7 +53,7 @@ app.post('/api/commits', async (req, res) => {
     required: ["summary"]
   };
 
-  const prompt = `You are provided with a series of commit messages. Summarize them in a concise and structured manner, focusing on key technical changes, improvements, and bug fixes. Ensure the summary is between 4-5 sentences, using relevant technical terminology when applicable. Format your response according to the following JSON schema:\n\n<JSONSchema>${JSON.stringify(jsonSchema)}</JSONSchema>\n\nCommit messages:\n${commitMessages}`;
+  const prompt = `You are provided with a series of commit messages. Summarize them in a concise and structured manner, focusing on key technical changes, improvements, and bug fixes. Ensure the summary is between 4-5 sentences, using relevant technical terminology when applicable. Try to use more technical terminology like refactor, optimize, bug, fix, performance, deployment, security, patch.Format your response according to the following JSON schema:\n\n<JSONSchema>${JSON.stringify(jsonSchema)}</JSONSchema>\n\nCommit messages:\n${commitMessages}`;
 
   try {
     const result = await model.generateContent(prompt);
