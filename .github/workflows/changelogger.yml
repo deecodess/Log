@@ -16,42 +16,97 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '14'
+          node-version: '18'  
 
       - name: Install dependencies
         run: |
           cd backend
           npm install
 
-      - name: Extract commit messages and changes
-        id: commit_data
-        run: |
-          COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s%n%b")
-          COMMIT_CHANGES=$(git log -1 -p | base64)  
-          
-          echo "commit_message<<EOT" >> $GITHUB_OUTPUT
-          echo "$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
-          echo "EOT" >> $GITHUB_OUTPUT
-          
-          echo "commit_changes=$COMMIT_CHANGES" >> $GITHUB_OUTPUT 
+      - name: Get Previous Commit SHA
+        id: get_previous_sha
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: runs } = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: context.workflow,
+              branch: context.ref.replace('refs/heads/', ''),
+              event: 'push',
+              status: 'success',
+              per_page: 2,  
+            });
 
-      - name: Debug commit messages and changes
-        run: |
-          echo "Commit messages: ${{ steps.commit_data.outputs.commit_message }}"
-          echo "Commit changes (base64): ${{ steps.commit_data.outputs.commit_changes }}"
+            if (runs.total_count < 2) {
+              core.setOutput('previous_sha', '');
+            } else {
+              const previousRun = runs.workflow_runs[1];
+              core.setOutput('previous_sha', previousRun.head_sha);
+            }
 
-      - name: Send commit messages and changes to backend
+      - name: Set Current and Previous SHAs
+        id: set_shas
+        run: |
+          echo "current_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "previous_sha=${{ steps.get_previous_sha.outputs.previous_sha }}" >> $GITHUB_OUTPUT
+
+      - name: Compare Commits and Get Changes
+        id: compare_commits
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const currentSha = process.env.CURRENT_SHA;
+            const previousSha = process.env.PREVIOUS_SHA;
+
+            if (!previousSha) {
+              const commit = await github.rest.repos.getCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: currentSha,
+              });
+
+              const changedFiles = commit.data.files.map(file => file.filename);
+              const commitMessage = commit.data.commit.message;
+
+              core.setOutput('changed_files', JSON.stringify(changedFiles));
+              core.setOutput('commit_messages', commit.data.commit.message);
+            } else {
+              const compare = await github.rest.repos.compareCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                base: previousSha,
+                head: currentSha,
+              });
+
+              const changedFiles = compare.data.files.map(file => file.filename);
+              const commitMessages = compare.data.commits.map(commit => commit.commit.message);
+
+              core.setOutput('changed_files', JSON.stringify(changedFiles));
+              core.setOutput('commit_messages', commitMessages.join('\n'));
+            }
+        env:
+          CURRENT_SHA: ${{ steps.set_shas.outputs.current_sha }}
+          PREVIOUS_SHA: ${{ steps.set_shas.outputs.previous_sha }}
+
+      - name: Debug Changed Files and Commit Messages
+        run: |
+          echo "Changed files: ${{ steps.compare_commits.outputs.changed_files }}"
+          echo "Commit messages: ${{ steps.compare_commits.outputs.commit_messages }}"
+
+      - name: Send Data to Backend
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} 
         run: |
-          COMMIT_MESSAGE="${{ steps.commit_data.outputs.commit_message }}"
-          COMMIT_CHANGES_ENCODED="${{ steps.commit_data.outputs.commit_changes }}"
-          COMMIT_CHANGES=$(echo "$COMMIT_CHANGES_ENCODED" | base64 --decode) 
+          COMMIT_MESSAGES="${{ steps.compare_commits.outputs.commit_messages }}"
+          CHANGED_FILES="${{ steps.compare_commits.outputs.changed_files }}"
           
-          jq -n --arg msg "$COMMIT_MESSAGE" --arg changes "$COMMIT_CHANGES" \
-          '{commits: [{ message: $msg, changes: $changes }]}' | \
+          JSON_PAYLOAD=$(jq -n --arg msg "$COMMIT_MESSAGES" --arg files "$CHANGED_FILES" \
+            '{commits: $msg, changed_files: ($files | fromjson)}')
+          
           curl -X POST "$BACKEND_URL" \
                -H "Content-Type: application/json" \
                -H "Authorization: Bearer $GEMINI_API_KEY" \
-               -d @-
+               -d "$JSON_PAYLOAD"
+
