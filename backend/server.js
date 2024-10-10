@@ -53,19 +53,26 @@ app.post('/api/commits', async (req, res) => {
     required: ["summary"]
   };
 
-  const prompt = `Follow JSON schema.<JSONSchema>${JSON.stringify(jsonSchema)}</JSONSchema>\nSummarize the following commit messages:\n${commitMessages}`;
-  
+  const prompt = `You are given the following commit messages. Summarize them in a concise and informative manner. Please adhere to the following JSON schema for your response:\n\n<JSONSchema>${JSON.stringify(jsonSchema)}</JSONSchema>\n\nCommit messages:\n${commitMessages}`;
+
   try {
     const result = await model.generateContent(prompt);
-    const summary = await result.response.text();
+    const summaryResponse = result.response.text();
+
+    let parsedSummary;
+    try {
+      parsedSummary = JSON.parse(summaryResponse).summary;
+    } catch (parseError) {
+      return res.status(500).send({ error: 'Failed to parse summary response from Gemini API', details: parseError.message });
+    }
 
     const changelog = {
-      summary,
+      summary: parsedSummary,
       date: new Date()
     };
 
     await changelogCollection.insertOne(changelog);
-    res.status(200).send({ summary });
+    res.status(200).send({ summary: parsedSummary });
 
   } catch (error) {
     if (error.response) {
