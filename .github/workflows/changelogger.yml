@@ -27,17 +27,18 @@ jobs:
         id: commit_data
         run: |
           COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s%n%b")
-          COMMIT_CHANGES=$(git log -1 -p)
+          COMMIT_CHANGES=$(git log -1 -p | base64)  
+          
           echo "commit_message<<EOT" >> $GITHUB_OUTPUT
           echo "$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
           echo "EOT" >> $GITHUB_OUTPUT
-          echo "commit_changes<<EOT" >> $GITHUB_OUTPUT
-          echo "$COMMIT_CHANGES" >> $GITHUB_OUTPUT
-          echo "EOT" >> $GITHUB_OUTPUT
+          
+          echo "commit_changes=$COMMIT_CHANGES" >> $GITHUB_OUTPUT 
 
       - name: Debug commit messages and changes
         run: |
           echo "Commit messages: ${{ steps.commit_data.outputs.commit_message }}"
+          echo "Commit changes (base64): ${{ steps.commit_data.outputs.commit_changes }}"
 
       - name: Send commit messages and changes to backend
         env:
@@ -45,8 +46,12 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} 
         run: |
           COMMIT_MESSAGE="${{ steps.commit_data.outputs.commit_message }}"
-          COMMIT_CHANGES="${{ steps.commit_data.outputs.commit_changes }}"
+          COMMIT_CHANGES_ENCODED="${{ steps.commit_data.outputs.commit_changes }}"
+          COMMIT_CHANGES=$(echo "$COMMIT_CHANGES_ENCODED" | base64 --decode) 
+          
           jq -n --arg msg "$COMMIT_MESSAGE" --arg changes "$COMMIT_CHANGES" \
           '{commits: [{ message: $msg, changes: $changes }]}' | \
-          curl -X POST $BACKEND_URL -H "Content-Type: application/json" \
-               -H "Authorization: Bearer $GEMINI_API_KEY" -d @-
+          curl -X POST "$BACKEND_URL" \
+               -H "Content-Type: application/json" \
+               -H "Authorization: Bearer $GEMINI_API_KEY" \
+               -d @-
