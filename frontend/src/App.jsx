@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import ReactMarkdown from 'react-markdown'; 
+import ReactMarkdown from 'react-markdown';
 import './App.css';
 
 function App() {
@@ -25,9 +25,12 @@ function App() {
     }
   };
 
+
   return (
     <div className="changelog-container">
-      <h1>Changelog</h1>
+      <h1 className="changelog-title">
+        Log<span className="title-dot"></span>
+      </h1>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <ul>
         {changelogs.length > 0 ? (
@@ -40,7 +43,9 @@ function App() {
                   day: 'numeric',
                 })}
               </div>
-              <div className="changelog-item-heading">Changelog {index + 1}</div>
+              {/* <div className="changelog-item-heading">
+                Changelog
+              </div> */}
               <ReactMarkdown className="changelog-item-summary">
                 {log.summary}
               </ReactMarkdown>

@@ -23,24 +23,31 @@ jobs:
           cd backend
           npm install
 
-      - name: Extract commit messages
-        id: commits
+      - name: Extract commit messages and changes
+        id: commit_data
         run: |
-          COMMITS=$(git log -1 --pretty=format:"%s%n%b")
-          echo "commits<<EOF" >> $GITHUB_OUTPUT
-          echo "$COMMITS" >> $GITHUB_OUTPUT
+          COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s%n%b")
+          COMMIT_CHANGES=$(git log -1 -p)
+          echo "commit_message<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "commit_changes<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMIT_CHANGES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Debug commit messages
+      - name: Debug commit messages and changes
         run: |
-          echo "Commit messages: ${{ steps.commits.outputs.commits }}"
+          echo "Commit messages: ${{ steps.commit_data.outputs.commit_message }}"
+          echo "Commit changes: ${{ steps.commit_data.outputs.commit_changes }}"
 
-      - name: Send commits to backend
+      - name: Send commit messages and changes to backend
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} 
         run: |
-          COMMITS="${{ steps.commits.outputs.commits }}"
-          jq -n --arg msg "$COMMITS" '{commits: [{ message: $msg }]}' | \
+          COMMIT_MESSAGE="${{ steps.commit_data.outputs.commit_message }}"
+          COMMIT_CHANGES="${{ steps.commit_data.outputs.commit_changes }}"
+          jq -n --arg msg "$COMMIT_MESSAGE" --arg changes "$COMMIT_CHANGES" \
+          '{commits: [{ message: $msg, changes: $changes }]}' | \
           curl -X POST $BACKEND_URL -H "Content-Type: application/json" \
                -H "Authorization: Bearer $GEMINI_API_KEY" -d @-
