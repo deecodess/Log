@@ -28,12 +28,12 @@ jobs:
         run: |
           COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s%n%b")
           COMMIT_CHANGES=$(git log -1 -p)
-          echo "commit_message<<EOF" >> $GITHUB_OUTPUT
+          echo "commit_message<<EOT" >> $GITHUB_OUTPUT
           echo "$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "commit_changes<<EOF" >> $GITHUB_OUTPUT
+          echo "EOT" >> $GITHUB_OUTPUT
+          echo "commit_changes<<EOT" >> $GITHUB_OUTPUT
           echo "$COMMIT_CHANGES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "EOT" >> $GITHUB_OUTPUT
 
       - name: Debug commit messages and changes
         run: |
