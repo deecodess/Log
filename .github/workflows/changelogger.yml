@@ -33,9 +33,9 @@ jobs:
           fi
           echo "previous_sha=$PREV_SHA" >> $GITHUB_ENV
 
-          - name: Get changed files and commit messages
-          id: changed_files
-          run: |
+      - name: Get changed files and commit messages
+        id: changed_files
+        run: |
             CURRENT_SHA=$(git rev-parse HEAD --)
             if [ -z "${{ env.previous_sha }}" ]; then
               CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r $CURRENT_SHA --)
