@@ -14,39 +14,54 @@ function App() {
   const fetchChangelogs = async () => {
     try {
       const backendUrl = import.meta.env.VITE_REACT_BACKEND_URL || 'http://localhost:5000/api/changelogs';
-      console.log('Fetching from:', backendUrl);
       const response = await axios.get(backendUrl);
-      console.log('Changelogs response:', response.data);
-
       setChangelogs(response.data);
-    } catch (error) {
-      console.error('Error fetching changelogs:', error);
+    } catch {
       setError('Failed to load changelogs.');
     }
   };
 
+  const technicalWords = ["refactor", "optimize", "bug", "fix", "performance", "deployment", "security", "patch"];
+
+  const highlightTechnicalWords = (text) => {
+    const regex = new RegExp(`\\b(${technicalWords.join('|')})\\b`, 'gi');
+    return text.replace(regex, (match) => `<span class="highlight">${match}</span>`);
+  };
+
+  const renderMarkdownWithHighlight = ({ children }) => {
+    const text = Array.isArray(children) ? children.join('') : children;
+    const highlightedText = highlightTechnicalWords(text);
+    return <p dangerouslySetInnerHTML={{ __html: highlightedText }} />;
+  };
 
   return (
     <div className="changelog-container">
       <h1 className="changelog-title">
         Log<span className="title-dot"></span>
       </h1>
+      <p className="tagline">Automating your changelogs</p>
+      
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <ul>
         {changelogs.length > 0 ? (
           changelogs.map((log, index) => (
             <li key={index} className="changelog-item">
-              <div className="changelog-item-date">
-                {new Date(log.date).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}
+              <div className="changelog-item-header">
+                <div className="changelog-item-date">
+                  {new Date(log.date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </div>
+                <div className="changelog-item-tag">Changelog</div>
               </div>
-              {/* <div className="changelog-item-heading">
-                Changelog
-              </div> */}
-              <ReactMarkdown className="changelog-item-summary">
+              <ReactMarkdown
+                className="changelog-item-summary"
+                components={{
+                  p: renderMarkdownWithHighlight,
+                }}
+              >
                 {log.summary}
               </ReactMarkdown>
             </li>
