@@ -38,6 +38,9 @@ const model = genAI.getGenerativeModel({
 
 app.post('/api/commits', async (req, res) => {
   const commits = req.body.commits;
+
+  console.log("Received:", req.body);
+
   if (!commits || !Array.isArray(commits)) {
     return res.status(400).send({ error: 'Invalid commits format' });
   }
