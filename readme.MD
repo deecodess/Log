@@ -16,3 +16,19 @@ So I shifted to Google Gemini API
 Doing this, I was able to offload the resource burden from my local machine and make this project a bit faster.
 
 
+### How to run
+Create .env file with the following format:
+```
+REPO_TOKEN="Your github repo token with all the necessary permissions"
+GEMINI_API_KEY="Your google gemini api key"
+BACKEND_URL="Your hosted backend url or https://changelog-u0xv.onrender.com/api/commits"
+```
+Go to your terminal and run the following commands
+- ```git clone https://github.com/deecodess/Log ```
+- ```cd backend```
+- ```npm i```
+- ```node server.js```
+- ```cd frontend```
+- ```npm i```
+- ```npm run dev```
+
